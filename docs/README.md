@@ -10,4 +10,3 @@ Các file quy định chính nằm ở root repo: [README.md](../README.md), [RU
 | [metrics.md](metrics.md) | Công thức pass rate, pass^5, variance, cost/success, crash safety | CP5, khi điền ADR |
 | [bonus_topics.md](bonus_topics.md) | Bảy topic điểm cộng B1–B7, thang điểm, khung `bonus_report.md` | Chỉ khi làm bonus |
 | [troubleshooting.md](troubleshooting.md) | Lỗi cài đặt, lỗi Windows, lỗi trace, lỗi benchmark | Khi gặp lỗi |
-| [instructor.md](instructor.md) | Pack hidden, cách phát `student_drop/`, chấm chính thức, CI | Chỉ giảng viên |
