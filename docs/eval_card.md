@@ -64,3 +64,4 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10.
   - Biến thể `quiet_override` + `rare` do tôi thử cho kết quả y hệt baseline (cùng 3 item hỏng, chỉ lệch seed 33 thay vì 55) nên gate cho qua; đó là hành vi đúng vì điểm yếu seed đã có trong baseline, nhưng cho thấy `pass_hat_5` không phân biệt "hỏng ở seed nào".
   - Slice nhỏ (`escalation` có 4 item): CI bootstrap rộng, chỉ bắt hồi quy lớn.
   - Còn trap có thể lọt: dòng trùng có cả bản fail lẫn bản pass cho cùng (item, seed) bị bắt, nhưng một report giả hoàn toàn nhất quán (hàng + metric + manifest đều giả) thì gate không phân biệt được với report thật vì không có chữ ký/run ID kiểm chứng; `evaluator_failures` trên run xanh bị chặn nhưng mất báo cáo hợp lệ nếu grader flaky thật.
+- **Bonus (Inspect AI):** xem `docs/bonus_inspect.md`: 4 grader port sang Inspect AI, 1960 ô so sánh, 0 lệch.

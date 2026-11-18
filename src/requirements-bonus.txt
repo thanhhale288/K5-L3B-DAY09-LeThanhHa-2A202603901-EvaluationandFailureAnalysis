@@ -1,0 +1,1 @@
+inspect-ai==0.3.291   # bonus only: python -m lab9.inspect_port (not needed by the gate or CI)
