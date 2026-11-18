@@ -40,3 +40,27 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10.
   - `reply_matches_ledger` trả "đúng" khi trace không có event `reply` (swarm gốc không ghi reply). Biến thể nào bỏ reply sẽ qua metric này.
   - Chưa có thông tin về người dùng thật.
 - **Khi nào tăng eval-set version:** khi thêm item (ví dụ từ trace case mới hoặc adversarial pack) hoặc sửa nhãn; khi đó chạy lại baseline và tăng `eval_set_version`. Đổi ngưỡng/metric thì tăng `metric_spec_version` (chỉ được chặt hơn khi cùng eval-set version).
+
+---
+
+# Mục v2 (Advanced / Expert, M5–M7)
+
+- **Run ID / eval set SHA:** baseline `E-swarm-20261118-21c7` (swarm); eval set v2 sha `21c7ac889d63` = 14 item v1 + 14 item adversarial (`adversarial_v2.json`), 28 item × 5 seed = 140 trial; spec `metric_spec_v2.yaml` (v2.0).
+- **M5, `fm_map.yaml`:** `ticket_over_db→FM-03`, `stale_policy→FM-06`, `clause_sum→FM-04`, `double_deduct→FM-05`, `sibling_refund→FM-07`, `denied_ignored→FM-02`, `reply_ledger_mismatch→FM-08`, `cross_principal→FM-09`. Tám cơ chế đều khớp một FM có sẵn trong taxonomy nên không thêm FM mới. `evalset --v2 --check` = 0 problem: mỗi FM bị tấn công có ≥ 3 item (FM-03: 5, FM-04: 4, FM-05: 5, FM-06: 3, FM-07: 5, FM-08: 4, FM-09: 4, FM-02: 4).
+- **Slice (nhãn quyết định, không lấy từ đầu ra agent):** `money_movement` (12 item, sàn 0.95), `adversarial` (14 item, sàn 0.95), `denial` (11 item, sàn 0.90), `escalation` (4 item, sàn 0.95); mọi slice đều `blocking` + `no_significant_drop`. Baseline swarm: 1.000 / 0.971 / 0.945 / 1.000. Sàn đặt ngay dưới baseline để một item hỏng ở cả 5 seed (−0.08 đến −0.07 trên slice) bị chặn.
+- **Slice nào bắt lỗi nào** (scorecard `lab9.mutation`, 3/3 regression bị chặn, 0 báo nhầm):
+
+| Variant | Kỳ vọng | Kết quả | Chặn bởi |
+|---|---|---|---|
+| fixed, honest_refactor | merge | merge | (không có metric nào bị chặn) |
+| seeded_regression | block | block | 5 metric + slice `money_movement`, `adversarial`, `denial` |
+| slice_regression | block | block | **chỉ slice** `money_movement` (0.850, CI [−0.300, +0.000]) và `adversarial`; `pass_rate` trung bình 0.936 vẫn trên sàn 0.85 và CI [−0.121, +0.029] chạm 0 |
+| flaky_regression | block | block | `pass_hat_5` (0.571 < 0.80) cùng `pass_rate`, `proposal_correct` và hai slice |
+
+- **M6, ngưỡng `pass_hat_5` ≥ 0.80 và nhiễu A/A:** chạy `lab9.mutation --aa 66,77,88,99,110`: mọi metric Δ = 0.0000 trên MockLLM (xác định theo seed, nên không có nhiễu thật). Sàn 0.80 nằm dưới baseline 0.893 (25/28 item pass cả 5 seed) và trên `flaky_regression` 0.571. Với LLM thật, A/A cho dải nhiễu > 0 (cùng agent, hai bộ seed vẫn lệch vài %); sàn phải nằm ngoài dải đó, nếu không PR trung thực bị chặn ngẫu nhiên. Cần chạy A/A nhiều lần trên model thật rồi đặt sàn ≤ baseline − dải nhiễu. `pass_hat_5` có `pass_hat_5 ≤ pass_at_1 ≤ pass_at_5`: 0.893 ≤ 0.979 ≤ 1.000.
+- **M7, `integrity_check` chặn:** NaN/inf; `evaluator_failures` khác rỗng; ô chấm `None`; số dòng ≠ items × seeds; dòng trùng; tập (item, seed) khác baseline; seed ngoài spec (cherry-pick); metric báo cáo khác metric tính lại từ dòng (sửa tay); slice tag đổi so với baseline; ratchet cho metric và slice (hạ `min`, nâng `max`, bỏ `blocking`, bỏ `no_significant_drop`, xóa metric/slice). Bốn trap công khai đều `blocked`, `lab9.mutation` = 3/3, baseline so với chính nó vẫn `merge`. Tôi tự thử thêm 5 trap và 6 cách nới spec ngoài bộ công khai (dòng trùng thay dòng fail, evaluator_failures trên run xanh, đổi slice tag, sửa metric tay, ô `None`): đều bị chặn.
+- **Giới hạn cỡ mẫu:**
+  - Bug chỉ xuất hiện ở 1/3 seed (`rare`) không phát hiện ổn định với 5 seed: không hạ ngưỡng để "bắt được".
+  - Biến thể `quiet_override` + `rare` do tôi thử cho kết quả y hệt baseline (cùng 3 item hỏng, chỉ lệch seed 33 thay vì 55) nên gate cho qua; đó là hành vi đúng vì điểm yếu seed đã có trong baseline, nhưng cho thấy `pass_hat_5` không phân biệt "hỏng ở seed nào".
+  - Slice nhỏ (`escalation` có 4 item): CI bootstrap rộng, chỉ bắt hồi quy lớn.
+  - Còn trap có thể lọt: dòng trùng có cả bản fail lẫn bản pass cho cùng (item, seed) bị bắt, nhưng một report giả hoàn toàn nhất quán (hàng + metric + manifest đều giả) thì gate không phân biệt được với report thật vì không có chữ ký/run ID kiểm chứng; `evaluator_failures` trên run xanh bị chặn nhưng mất báo cáo hợp lệ nếu grader flaky thật.
