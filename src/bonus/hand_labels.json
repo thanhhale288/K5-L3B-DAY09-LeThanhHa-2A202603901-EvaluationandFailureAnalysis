@@ -1,0 +1,22 @@
+{
+  "note": "Nhãn gán bằng cách đọc trace, kết quả benchmark và biết lỗi được cài vào từng biến thể; gán trước khi so với tagger. Nhóm cần đọc lại từng dòng trước khi nộp. Cùng người viết luật tagger và cài lỗi nên độ khớp có xu hướng cao hơn nhãn của người độc lập.",
+  "labels": [
+    {"run_id": "R-swarm-C-002-s55", "group": "FC3", "mode": "FM-3.3", "note": "Trace có model_override: peer đọc 5 ngày từ ticket, ghi đè delay_days = 2 của order; quote 20.000 thay vì 0."},
+    {"run_id": "R-single_trusts_ticket-C-002-s55", "group": "FC3", "mode": "FM-3.3", "note": "Cùng lỗi với swarm trên một agent: số ngày trong ticket được dùng thay order row, không đối chiếu."},
+    {"run_id": "R-single_low_cap-C-001-s11", "group": "FC1", "mode": "FM-1.5", "note": "Hết 2 bước sau lookup_order và compute_compensation, chưa tới final; decision reason step_cap."},
+    {"run_id": "R-single_low_cap-C-007-s33", "group": "FC1", "mode": "FM-1.5", "note": "Vòng lặp dừng ở step cap trước khi gọi host, nên không có policy_denied."},
+    {"run_id": "R-single_low_cap-C-013-s55", "group": "FC1", "mode": "FM-1.5", "note": "Step cap; claim đáng lẽ bị host từ chối nhưng shape không tới bước gọi host."},
+    {"run_id": "R-single_low_cap-C-003-s44", "group": "FC1", "mode": "FM-1.5", "note": "Hàng hỏng đã verify, đáng lẽ resolved 150.000; dừng ở step cap."},
+    {"run_id": "R-orch_drops_delay-C-001-s22", "group": "FC2", "mode": "FM-2.4", "note": "investigator_return thiếu delay_days; orchestrator điền 0 nên quote 0, denied thay vì resolved 35.000."},
+    {"run_id": "R-orch_drops_delay-C-007-s44", "group": "FC2", "mode": "FM-2.4", "note": "Mất delay_days nên quote 0 và không gọi host; đáng lẽ quote 35.000 và host từ chối vì approval hết hạn."},
+    {"run_id": "R-orch_drops_delay-C-012-s11", "group": "FC2", "mode": "FM-2.4", "note": "Mất delay_days giữa investigator và orchestrator, claim trễ 4 ngày bị denied."},
+    {"run_id": "R-orch_stale_clause-C-002-s55", "group": "FC1", "mode": "FM-1.1", "note": "Ticket cũng nói sai (5 ngày), nhưng quote đến từ SHIP-LATE-OLD (trễ 1 ngày là đủ, hoàn toàn bộ). Nguyên nhân gốc là dùng policy đã thay thế."},
+    {"run_id": "R-orch_stale_clause-C-006-s11", "group": "FC1", "mode": "FM-1.1", "note": "Làm đúng điều ticket đòi (SHIP-LATE-OLD), trả 300.000 trong approval 300.000; trái spec chỉ dùng policy hiện hành."},
+    {"run_id": "R-orch_stale_clause-C-013-s33", "group": "FC1", "mode": "FM-1.1", "note": "Entitlement bị thổi lên 250.000 nên vẫn còn phần chênh sau khi host trừ 35.000 đã hoàn; host trả thêm 35.000."},
+    {"run_id": "R-orch_stale_clause-C-014-s22", "group": "FC1", "mode": "FM-1.1", "note": "Quote 200.000 theo SHIP-LATE-OLD thay vì 150.000 theo DMG-04; proposal sai."},
+    {"run_id": "R-orch_stale_clause-C-009-s44", "group": "FC1", "mode": "FM-1.1", "note": "Order trễ 1 ngày, đáng lẽ denied; clause cũ cho hoàn toàn bộ 90.000."},
+    {"run_id": "R-orch_ignores_host-C-007-s11", "group": "FC3", "mode": "FM-3.2", "note": "host_result ok=false (approval_expired) nhưng shape báo resolved; ledger không có dòng nào."},
+    {"run_id": "R-orch_ignores_host-C-013-s22", "group": "FC3", "mode": "FM-3.2", "note": "Host từ chối vì order_already_refunded, shape không kiểm kết quả host."},
+    {"run_id": "R-orch_ignores_host-C-013-s55", "group": "FC3", "mode": "FM-3.2", "note": "Như trên, seed khác; kết quả không phụ thuộc seed."}
+  ]
+}

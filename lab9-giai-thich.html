@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 9 Đánh giá và phân tích lỗi</title>
+<style>
+/* Layout: cột đọc đơn, thanh checkpoint dính trên cùng, mỗi checkpoint là một khối có đường kẻ trái theo tầng (Core/Advanced/Expert) */
+:root{
+  --bg:#f6f7f5; --surface:#ffffff; --fg:#1b2420; --muted:#5d6b64; --line:#dde3df;
+  --core:#1f6f54; --adv:#9a5b00; --exp:#8a2f4a; --code-bg:#eef2ef; --code-fg:#17332a;
+  --font-display:"Space Grotesk",system-ui,sans-serif; --font-body:"Inter",system-ui,sans-serif; --font-mono:ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121815; --surface:#1a221e; --fg:#e6ece8; --muted:#9aa9a1; --line:#2c3832;
+  --core:#4fc79a; --adv:#e5a54a; --exp:#e57f9d; --code-bg:#0d1210; --code-fg:#bfe8d6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121815; --surface:#1a221e; --fg:#e6ece8; --muted:#9aa9a1; --line:#2c3832;
+  --core:#4fc79a; --adv:#e5a54a; --exp:#e57f9d; --code-bg:#0d1210; --code-fg:#bfe8d6; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:16px;line-height:1.65;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+.wrap{max-width:860px;margin:0 auto}
+h1,h2,h3{font-family:var(--font-display);line-height:1.2;text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,5vw,42px);letter-spacing:-.01em}
+h2{font-size:24px;margin-top:56px;margin-bottom:12px}
+h3{font-size:18px}
+p{margin:0 0 12px;max-width:68ch}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+header.top{padding-top:40px;padding-bottom:8px}
+header.top p{color:var(--muted);font-size:18px}
+nav{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:24px 0 0}
+nav .row{display:flex;gap:6px;overflow-x:auto;padding:10px 0}
+nav a{flex:none;font-family:var(--font-mono);font-size:13px;color:var(--fg);text-decoration:none;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+nav a:hover,nav a:focus-visible{border-color:var(--fg);outline:none}
+nav a.c{border-left:3px solid var(--core)} nav a.a{border-left:3px solid var(--adv)} nav a.e{border-left:3px solid var(--exp)}
+code{font-family:var(--font-mono);font-size:.88em;background:var(--code-bg);color:var(--code-fg);padding:1px 5px;border-radius:4px}
+pre{background:var(--code-bg);color:var(--code-fg);font-family:var(--font-mono);font-size:13px;line-height:1.6;padding:14px 16px;border-radius:8px;overflow-x:auto;margin:10px 0 0}
+pre code{background:none;padding:0;color:inherit}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0}
+.flow span{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px}
+.flow i{color:var(--muted);font-style:normal}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.two>div{min-width:0}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.box h3{margin-bottom:6px}
+.cp{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--tier,var(--core));border-radius:10px;padding:20px 22px;margin-top:20px;scroll-margin-top:70px}
+.cp.adv{--tier:var(--adv)} .cp.exp{--tier:var(--exp)}
+.cp .meta{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:13px;color:var(--muted);margin-bottom:8px}
+.pill{font-family:var(--font-mono);font-weight:700;color:var(--tier,var(--core))}
+.cp h3{margin-bottom:10px}
+dl{display:grid;grid-template-columns:110px 1fr;gap:8px 14px;margin:12px 0 0}
+dt{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;padding-top:3px}
+dd{margin:0;min-width:0}
+dd ul{margin:0;padding-left:18px} dd li{margin-bottom:3px}
+@media (max-width:560px){dl{grid-template-columns:1fr;gap:2px}dt{padding-top:10px}}
+.tablewrap{overflow-x:auto;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+.note{border-left:3px solid var(--adv);padding:4px 0 4px 14px;margin:14px 0;color:var(--muted)}
+.rule{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.rule span{border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:13px;background:var(--surface)}
+footer{margin-top:56px;color:var(--muted);font-size:13px}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap">
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">K5 · Day 9 · LogiX-VN</div>
+  <h1>Lab 9: Evaluation &amp; Failure Analysis</h1>
+  <p>Lab 8 trả lời “agent có chạy không”. Lab 9 trả lời “bản mới có tốt hơn bản cũ không, và làm sao chặn bản tệ trước khi merge”.</p>
+</header>
+
+<nav aria-label="Checkpoint"><div class="row">
+  <a href="#muc-tieu">Mục tiêu</a><a href="#buc-tranh">Bức tranh</a>
+  <a class="c" href="#m0">M0</a><a class="c" href="#m1">M1</a><a class="c" href="#m2">M2</a><a class="c" href="#m3">M3</a><a class="c" href="#m4">M4</a><a class="c" href="#nop">Nộp</a>
+  <a class="a" href="#m5">M5</a><a class="a" href="#m6">M6</a><a class="e" href="#m7">M7</a>
+  <a href="#diem">Điểm</a>
+</div></nav>
+
+<h2 id="muc-tieu">Mục tiêu</h2>
+<p>Bạn đang có một agent hoàn tiền cho công ty logistics giả lập LogiX-VN. Mỗi lần sửa agent, bạn cần một cách <b>đo</b> để biết nó tốt lên hay tệ đi, và một <b>cổng CI</b> tự động từ chối bản tệ. Lab dạy xây đúng bộ máy đó:</p>
+<div class="two">
+  <div class="box"><h3>Biết agent sai ở đâu</h3><p>Đọc trace, tìm <b>bước sai đầu tiên</b>, gom thành taxonomy lỗi (FM-01 … FM-09).</p></div>
+  <div class="box"><h3>Tin được người chấm</h3><p>Kiểm tra LLM judge bằng κ, precision, recall. Judge không đạt thì không được làm gate.</p></div>
+  <div class="box"><h3>Chấm bằng code khi có tiền</h3><p>Approval và số tiền chấm bằng grader trên trajectory và ledger, không tin lời agent tự khai.</p></div>
+  <div class="box"><h3>Quyết định có thống kê</h3><p>So hai phiên bản bằng paired bootstrap, ra CI, rồi gate exit 0 (merge) hoặc exit 1 (chặn).</p></div>
+</div>
+<p style="margin-top:14px">Lab chạy offline: MockLLM và judge replay, không cần API key, không dùng Langfuse hay OTel. Trace cố định (14 item × 5 seed: 11, 22, 33, 44, 55), nên chạy lần nào cũng ra cùng kết quả. Không được sửa <code>src/lab8/</code>.</p>
+
+<h2 id="buc-tranh">Bức tranh tổng thể</h2>
+<div class="flow" aria-label="Luồng làm việc">
+  <span>Trace của agent</span><i>→</i><span>M1 Taxonomy + eval set</span><i>→</i><span>M2 Kiểm judge</span><i>→</i><span>M3 Grader trajectory</span><i>→</i><span>M4 Bootstrap + gate</span><i>→</i><span><b>CI eval-gate</b></span>
+</div>
+<p>Core (M0–M4) chứng minh gate chặn được một regression rõ ràng. Advanced và Expert (M5–M7) làm khó hơn: lỗi chỉ nằm ở một slice nhỏ, lỗi chập chờn 1/5 lần, và report bị “làm đẹp” để qua gate.</p>
+<div class="rule"><span>Không sửa lab8/ (−10)</span><span>Không sửa tay reports/ (−20)</span><span>Không nhãn inline trong item (−5)</span><span>Không nới ngưỡng cùng eval-set version (−10)</span></div>
+
+<h2>Các checkpoint</h2>
+
+<section class="cp" id="m0">
+  <div class="meta"><span class="pill">M0</span><span>13:30</span><span>Core</span></div>
+  <h3>Môi trường</h3>
+  <dl>
+    <dt>Mục tiêu</dt><dd>Có repo Lab 8 chạy được kèm lớp phủ Lab 9, và sinh được eval set.</dd>
+    <dt>Cách làm</dt><dd><ul>
+      <li>Tạo nhánh <code>starter/d09</code> trong repo Lab 8, chép đúng 3 thư mục: <code>src/</code>, <code>docs/</code>, <code>.github/</code> từ starter. Không chép README, RUBRIC, <code>.gitignore</code> ở gốc, vì sẽ mất dòng chặn <code>.env</code>.</li>
+      <li>Cài <code>requirements.txt</code> và <code>requirements-lab9.txt</code> (Python ≥ 3.11).</li>
+      <li>Chỉ cần <code>src/lab8/</code> còn nguyên. M0–M4 chạy trên shape <code>swarm</code> của giảng viên, nên Lab 8 chưa xong vẫn làm được.</li>
+    </ul><pre><code>cd src
+python -m lab9.smoke                 # in "M0 PASS"
+python -m lab9.evalset --build       # 14 item + labels_v1.json tách riêng</code></pre></dd>
+    <dt>Đạt khi</dt><dd>Cả hai lệnh exit 0. <code>git status</code> chỉ hiện file mới, không có file nào trong <code>lab8/</code> bị sửa.</dd>
+  </dl>
+</section>
+
+<section class="cp" id="m1">
+  <div class="meta"><span class="pill">M1</span><span>13:45</span><span>Core · 12 điểm</span></div>
+  <h3>Taxonomy lỗi và gắn nhãn eval set</h3>
+  <dl>
+    <dt>Mục tiêu</dt><dd>Biến các trace sai thành danh sách failure mode có bằng chứng, rồi gắn mã FM vào từng item.</dd>
+    <dt>Cách làm</dt><dd><ul>
+      <li>Điền <code>docs/failure_taxonomy.md</code>: ≥5 FM, mỗi FM có định nghĩa 1 câu, layer (model/prompt, tool/schema, retrieval, orchestration/state, guardrail/approval), ≥1 claim@seed làm bằng chứng, grader dự kiến (code / judge / human).</li>
+      <li>Các mã cố định: FM-01 leaky_trace, FM-02 ignore_denied, FM-03 ticket_trust, FM-04 sum_parts/round_down, FM-05 pre_deducted, FM-06 stale_clause, FM-07 sibling_refund, FM-08 misreport, FM-09 cross_principal (v2).</li>
+      <li>Xem trace bằng <code>python -m lab9.trace_case --shape seeded_regression --claim C-002 --seed 11</code>. Đọc ledger trước reply.</li>
+      <li>Điền <code>failure_modes</code> cho 14 item trong <code>evalset.py</code>, thêm provenance.</li>
+      <li>Viết 1 trace case trong <code>docs/trace_case.md</code>: trial, triệu chứng, <b>event đầu tiên sai</b> (dẫn số event), FM, đối chứng trên <code>fixed</code>, regression test.</li>
+    </ul><pre><code>python -m lab9.evalset --check       # phải 0 problem</code></pre></dd>
+    <dt>Đạt khi</dt><dd>5 anchor khớp key giảng viên theo mã FM và bước sai đầu tiên. Tiền và approval luôn chấm bằng code.</dd>
+  </dl>
+</section>
+
+<section class="cp" id="m2">
+  <div class="meta"><span class="pill">M2</span><span>14:30</span><span>Core · 12 điểm</span></div>
+  <h3>Judge-the-judge</h3>
+  <dl>
+    <dt>Mục tiêu</dt><dd>Quyết định tiêu chí chấm bằng LLM nào đủ tin cậy để dùng làm gate.</dd>
+    <dt>Cách làm</dt><dd><ul>
+      <li>Cài trong <code>stats.py</code>: ma trận nhầm lẫn, precision, recall, Cohen’s κ (κ không xác định thì FAIL), hiệu chỉnh Rogan-Gladen.</li>
+      <li>Ngưỡng: κ ≥ 0.6, P ≥ 0.8, R ≥ 0.7.</li>
+      <li>Chạy judge trên hai file CSV (tone và helpful), rồi audit tay ≥5 chỗ judge và người bất đồng.</li>
+    </ul><pre><code>python -m lab9.judge --csv data/eval/judge_tone_public.csv --audit 5</code></pre></dd>
+    <dt>Kết quả kỳ vọng</dt><dd><code>judge_tone</code> đạt (κ≈0.757, P≈0.857, R=0.8) nên dùng được. <code>judge_helpful</code> không đạt nên không được làm gate. Phải giải thích vì sao, dẫn ma trận nhầm lẫn.</dd>
+    <dt>Nộp</dt><dd><code>docs/judge_audit.md</code>: bảng 2 tiêu chí, ≥5 case audit (ai đúng) và hành động sửa rubric.</dd>
+  </dl>
+</section>
+
+<section class="cp" id="m3">
+  <div class="meta"><span class="pill">M3</span><span>15:15</span><span>Core · 12 điểm</span></div>
+  <h3>Trajectory assertion</h3>
+  <dl>
+    <dt>Mục tiêu</dt><dd>Chấm cách agent đi tới kết quả (approval, ledger), không chỉ câu trả lời cuối.</dd>
+    <dt>Cách làm</dt><dd><ul>
+      <li>Viết 2 grader trong <code>graders.py</code>: <code>ApprovalBypass</code> (có refund khi approval không hợp lệ) và <code>RefundAmountCorrect</code> (tiền ledger khớp nhãn).</li>
+      <li>Thêm 1 metric vào <code>metric_spec.yaml</code> bắt FM-08: reply nói số tiền khác ledger.</li>
+    </ul><pre><code>python -m pytest -q -m student -o addopts= -k "lab9 and not advanced"</code></pre></dd>
+    <dt>Đạt khi</dt><dd>Phát hiện ≥80% trace lỗi, báo nhầm ≤10% trên <code>fixed</code>, metric FM-08 hoạt động.</dd>
+  </dl>
+</section>
+
+<section class="cp" id="m4">
+  <div class="meta"><span class="pill">M4</span><span>16:00</span><span>Core · 15 điểm</span></div>
+  <h3>Paired bootstrap và CI gate</h3>
+  <dl>
+    <dt>Mục tiêu</dt><dd>Một lệnh trả exit 0 hoặc 1 để CI quyết định merge, dựa trên khoảng tin cậy của hiệu hai phiên bản.</dd>
+    <dt>Cách làm</dt><dd><ul>
+      <li>Cài <code>paired_bootstrap</code> trong <code>stats.py</code>: ghép cặp theo cùng item, lấy CI của hiệu PR trừ baseline. Metric nào có CI dưới sàn thì BLOCK.</li>
+      <li>Sinh baseline từ <code>swarm</code>, chạy <code>fixed</code> và <code>seeded_regression</code> qua gate.</li>
+      <li>Commit <code>reports/baseline_v1.json</code> bằng <code>git add -f</code>, thêm section <code>eval</code> vào <code>harness_map.yaml</code> (mẫu <code>harness_map.eval.yaml</code>).</li>
+    </ul><pre><code>python -m lab9.eval --shape swarm --out reports/baseline_v1.json
+python -m lab9.eval --shape fixed
+python -m lab9.gate --pr reports/eval_fixed.json --baseline reports/baseline_v1.json              # exit 0
+python -m lab9.eval --shape seeded_regression
+python -m lab9.gate --pr reports/eval_seeded_regression.json --baseline reports/baseline_v1.json  # exit 1</code></pre></dd>
+    <dt>Đạt khi</dt><dd><code>pass_rate</code> Δ −0.271, CI [−0.500, −0.057] nên BLOCK; CI lệch ≤0.01 so với tham chiếu. Job <code>eval-gate</code> xanh.</dd>
+  </dl>
+</section>
+
+<section class="cp" id="nop">
+  <div class="meta"><span class="pill">Nộp</span><span>16:45</span><span>Core · 9 điểm</span></div>
+  <h3>Eval card, PRD v1.1 và Pull Request</h3>
+  <dl>
+    <dt>Việc cần làm</dt><dd><ul>
+      <li><code>docs/eval_card.md</code>: run ID, bảng baseline vs PR kèm CI, kết quả judge, owner khi gate exit 1, giới hạn.</li>
+      <li><code>docs/PRD_v1.1.md</code>: cập nhật yêu cầu sản phẩm theo kết quả đánh giá.</li>
+      <li>Mở PR <code>starter/d09</code> → <code>main</code>, dán output gate exit 1 của <code>seeded_regression</code> vào mô tả.</li>
+    </ul></dd>
+    <dt>Giới hạn phải nêu</dt><dd>MockLLM, chỉ 14 item, judge replay, chưa đo trên người dùng thật. Số liệu phải khớp report có run_id. Hạn chót 23:59, commit cuối trước giờ đó mới được chấm.</dd>
+  </dl>
+</section>
+
+<section class="cp adv" id="m5">
+  <div class="meta"><span class="pill">M5</span><span>sau 17:00</span><span>Advanced · 6 + 4 + 6 + 2 + 2 điểm (cùng M6)</span></div>
+  <h3>Eval set v2 và slice gate</h3>
+  <dl>
+    <dt>Mục tiêu</dt><dd>Bắt regression chỉ nằm ở một lát dữ liệu nhỏ, mà trung bình toàn bộ vẫn trên sàn.</dd>
+    <dt>Cách làm</dt><dd><ul>
+      <li>Điền <code>config/fm_map.yaml</code>: cơ chế tấn công trong adversarial pack → mã FM của bạn. Mỗi FM bị tấn công cần ≥3 item.</li>
+      <li>Điền <code>metric_spec_v2.yaml</code>: slice <code>money_movement</code> và <code>adversarial</code> blocking, <code>pass_hat_5</code> blocking, metric FM-08.</li>
+      <li>Cài <code>slice_check</code> trong <code>gate.py</code>.</li>
+    </ul><pre><code>python -m lab9.evalset --v2 --build
+python -m lab9.eval --shape swarm --spec config/metric_spec_v2.yaml --out reports/baseline_v2.json</code></pre></dd>
+    <dt>Đạt khi</dt><dd><code>slice_regression</code> có pass_rate trung bình vẫn trên sàn nhưng CI chạm 0; chỉ slice <code>money_movement</code> chặn được. Gate cũng chặn một slice regression ẩn.</dd>
+  </dl>
+</section>
+
+<section class="cp adv" id="m6">
+  <div class="meta"><span class="pill">M6</span><span>sau 17:00</span><span>Advanced</span></div>
+  <h3>Nhiễu, pass@k và pass^k</h3>
+  <dl>
+    <dt>Mục tiêu</dt><dd>Chọn ngưỡng nằm ngoài dải nhiễu, và bắt lỗi chập chờn 1/5 lần.</dd>
+    <dt>Cách làm</dt><dd><ul>
+      <li>Cài <code>stats.pass_at_k</code> (ít nhất 1 lần đúng trong k) và <code>pass_hat_k</code> (đúng cả k lần). Từ chối (n, c, k) không hợp lệ.</li>
+      <li>Chạy A/A trên nhiều bộ seed. Với MockLLM Δ = 0; với LLM thật dải nhiễu &gt; 0 nên sàn phải đặt ngoài dải đó. Phải giải thích điều này.</li>
+      <li>Đặt sàn <code>pass_hat_5</code> ≥ 0.8 để chặn <code>flaky_regression</code>, vì <code>pass_rate</code> trung bình không chặn ổn định.</li>
+    </ul><pre><code>python -m lab9.mutation --spec config/metric_spec_v2.yaml --aa 66,77,88,99,110
+python -m lab9.mutation --spec config/metric_spec_v2.yaml --baseline reports/baseline_v2.json
+# exit 0 chỉ khi 3/3 regression bị chặn và 0 báo nhầm</code></pre></dd>
+    <dt>Lưu ý</dt><dd>Lỗi chỉ xuất hiện ở 1/3 seed không phát hiện ổn định được với 5 seed. Ghi đây là giới hạn cỡ mẫu trong eval card, đừng hạ ngưỡng để gate “bắt được”.</dd>
+  </dl>
+</section>
+
+<section class="cp exp" id="m7">
+  <div class="meta"><span class="pill">M7</span><span>sau 17:00</span><span>Expert · 15 điểm</span></div>
+  <h3>Gate chống gian lận eval</h3>
+  <dl>
+    <dt>Mục tiêu</dt><dd>Gate không bị lừa bởi report bị làm đẹp: người viết PR (hoặc chính agent) có thể che lỗi thay vì sửa.</dd>
+    <dt>Cách làm</dt><dd>Cài <code>integrity_check</code> (số dòng, tập (item, seed), giá trị NaN, evaluator_failures) và ratchet so với <code>--base-spec</code>. Các trap công khai:
+      <div class="tablewrap"><table>
+        <tr><th>Trap</th><th>Cách gian lận</th><th>Gate bắt bằng</th></tr>
+        <tr><td><code>evaluator_errors_as_nan</code></td><td>Grader crash, giá trị thành None/NaN rồi rơi khỏi trung bình</td><td>integrity</td></tr>
+        <tr><td><code>dropped_failing_rows</code></td><td>Bỏ các dòng fail</td><td>integrity: số dòng</td></tr>
+        <tr><td><code>cherry_picked_seeds</code></td><td>Chỉ giữ seed đẹp</td><td>integrity: tập (item, seed)</td></tr>
+        <tr><td><code>loosened_spec</code></td><td>Hạ ngưỡng, bỏ slice trong cùng PR</td><td>ratchet với <code>--base-spec</code></td></tr>
+      </table></div>
+      <pre><code>python -m lab9.eval --shape slice_regression --spec config/metric_spec_v2.yaml --out reports/eval_slice_regression.json
+python -m lab9.traps --pr reports/eval_slice_regression.json --baseline reports/baseline_v2.json --spec config/metric_spec_v2.yaml
+# exit 0 chỉ khi gate chặn mọi trap</code></pre></dd>
+    <dt>Đạt khi</dt><dd>Mỗi trap khiến gate exit 1 với lý do <code>INTEGRITY</code>. Chặn thêm 2 trap ẩn, baseline so với chính nó vẫn merge. Gợi ý trap ẩn có thể lọt: dòng trùng lặp, evaluator_failures trên run xanh.</dd>
+  </dl>
+</section>
+
+<h2 id="diem">Điểm và lỗi hay gặp</h2>
+<div class="tablewrap"><table>
+  <tr><th>Phần</th><th>Điểm</th><th>Nội dung</th></tr>
+  <tr><td>Core</td><td class="n">60</td><td>M1 12 · M2 12 · M3 12 · M4 15 · Eval card + PRD 9</td></tr>
+  <tr><td>Advanced</td><td class="n">25</td><td>pass@k 5 · eval v2 6 · spec v2 4 · slice regression 6 · FM-08 ẩn 2 · không báo nhầm 2</td></tr>
+  <tr><td>Expert</td><td class="n">15</td><td>Chặn trap 9 · 6 điểm còn lại nhân với tỉ lệ trap bị chặn</td></tr>
+  <tr><td>Bonus</td><td class="n">+5</td><td>Port grader sang Inspect AI hoặc DeepEval và so khớp kết quả (tối đa 100)</td></tr>
+</table></div>
+<div class="note">Bộ chấm Advanced và Expert dùng variant và trap ẩn, nên khớp cứng tên variant công khai sẽ không được điểm. Sửa gate cho đúng, đừng sửa variant, trap hay bộ chấm để “qua” (−15).</div>
+
+<footer>Nguồn: README.md, CHECKPOINTS.md, RUBRIC.md, SUBMISSION.md và docs/ trong repo bài lab.</footer>
+</div>
+</body>
+</html>
